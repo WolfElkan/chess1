@@ -8,21 +8,21 @@
 using namespace std;
 
 const int Empty       =  0;
-const int WhitePawn   =  1;
-const int WhiteKnight =  2;
-const int WhiteKing   =  3;
-
-const int WhiteRook   =  5;
-const int WhiteBishop =  6;
-const int WhiteQueen  =  7;
-
-const int BlackPawn   =  9;
-const int BlackKnight = 10;
-const int BlackKing   = 11;
-
-const int BlackRook   = 13;
-const int BlackBishop = 14;
-const int BlackQueen  = 15;
+const int WhitePawn   =  1; // P
+const int WhiteKnight =  2; // N
+const int WhiteKing   =  3; // K
+const int WhiteGeneric=  4; // X
+const int WhiteRook   =  5; // R
+const int WhiteBishop =  6; // B
+const int WhiteQueen  =  7; // Q
+const int Generic     =  8; // *
+const int BlackPawn   =  9; // p
+const int BlackKnight = 10; // n
+const int BlackKing   = 11; // k
+const int BlackGeneric= 12; // x
+const int BlackRook   = 13; // r
+const int BlackBishop = 14; // b
+const int BlackQueen  = 15; // q
 
 int orthogonal[8][2] = {
 	{ 0, 1}, // North
@@ -81,6 +81,48 @@ string String(char* a, int size){
     return s; 
 }
 
+// unsigned long long int bitify(bool board[8][8]){
+// 	int board_bits = 0;
+// 	for (int rank = 7; rank >= 0; rank--){
+// 		for (int file = 7; file >= 0; file--) {
+// 			board_bits *= 2;
+// 			board_bits += board[rank][file];
+// 		}
+// 	}
+// 	return board_bits;
+// }
+
+// void boardify(bool board[8][8], unsigned long long int board_bits){
+// 	for (int rank = 7; rank >= 0; rank--) {
+// 		for (int file = 7; file >= 0; file--) {
+// 			board[rank][file] = bool(board_bits % 2);
+// 			board_bits /= 2;
+// 		}
+// 	}
+// }
+
+
+// uint256_t bitify(int board[8][8]){
+// 	uint256_t board_bits = 0;
+// 	for (int rank = 7; rank >= 0; rank--){
+// 		for (int file = 7; file >= 0; file--) {
+// 			board_bits *= 16;
+// 			board_bits += board[rank][file];
+// 		}
+// 	}
+// 	return board_bits;
+// }
+
+// void boardify(int board[8][8], uint256_t board_bits){
+// 	for (int rank = 7; rank >= 0; rank--) {
+// 		for (int file = 7; file >= 0; file--) {
+// 			board[rank][file] = int(board_bits % 16);
+// 			board_bits /= 16;
+// 		}
+// 	}
+// }
+
+
 char piece_symbol(int n){
 	char pieces[16] = {' ','P','N','K','X','R','B','Q','*','p','n','k','x','r','b','q'};
 	if (n > 16) {
@@ -99,6 +141,60 @@ char Piece_symbol(int n){
 		return pieces[n];
 	}
 	return '0';
+}
+
+int piece_symbol(char p){
+	switch(p) {
+	case ' ':
+		return Empty;
+		break;
+	case 'P':
+		return WhitePawn   ;
+		break;
+	case 'N':
+		return WhiteKnight ;
+		break;
+	case 'K':
+		return WhiteKing   ;
+		break;
+	// case 'X':
+	// 	return WhiteGeneric;
+	// 	break;
+	case 'R':
+		return WhiteRook   ;
+		break;
+	case 'B':
+		return WhiteBishop ;
+		break;
+	case 'Q':
+		return WhiteQueen  ;
+		break;
+	// case '*':
+	// 	return Generic     ;
+	// 	break;
+	case 'p':
+		return BlackPawn   ;
+		break;
+	case 'n':
+		return BlackKnight ;
+		break;
+	case 'k':
+		return BlackKing   ;
+		break;
+	// case 'x':
+	// 	return BlackGeneric;
+	// 	break;
+	case 'r':
+		return BlackRook   ;
+		break;
+	case 'b':
+		return BlackBishop ;
+		break;
+	case 'q':
+		return BlackQueen  ;
+		break;
+	}
+	return 0;
 }
 
 int printboard(int board[8][8], bool grid) {
@@ -142,71 +238,49 @@ string pack_space(int r, int f){
 	return pack_space(r * 8 + f);
 }
 
-bool make_move(int board[8][8], bool turn, string move){
-	regex re("((([RNBQKP]|)([a-h]?)([1-8]?)(x?)([a-h])([1-8]))|(O-O(-O|)))([+#]?)");
-	smatch match;
-	regex_match(move, match, re);
-	if (match.length()) {
-		string pieceS = match.str(3);
-		if (pieceS.length() == 0) {
-			pieceS = "P";
-		}
-		char piece = pieceS[0];
-		string rank0S  = match.str(5);
-		string file0S  = match.str(4);
-		string capture = match.str(6);
-		string rank1S  = match.str(8);
-		string file1S  = match.str(7);
-		string castle  = match.str(9);
-		string check  = match.str(11);
+bool boolspace(bool boolboard[8][8], int r, int f){
+	return boolboard[r][f];
+}
 
-		int rank0 = 56 - rank0S[0];
-		int file0 = file0S[0] - 97;
-		int rank1 = 56 - rank1S[0];
-		int file1 = file1S[0] - 97;
+bool boolspace(bool boolboard[8][8], string space){
+	int rf = parse_space(space);
+	int r = rf / 8;
+	int f = rf % 8;
+	return boolspace(boolboard, r, f);
+}
 
-		char current_piece = piece_symbol(board[rank0][file0]);
-		current_piece -= 32 * turn;
-		if (current_piece == piece) {
-			int moving = board[rank0][file0];
-			board[rank0][file0] = 0;
-			board[rank1][file1] = moving;
-			return true;
-		}
-		// cout << current_piece << endl;
-	}
+bool boolspace(unsigned long long int board_bits, string space) {
 	return false;
 }
 
-uint256_t bitify(int board[8][8]){
-	uint256_t board_bits = 0;
-	for (int rank = 0; rank < 8; rank++){
-		for (int file = 0; file < 8; file++)
-		{
-			board_bits *= 16;
-			board_bits += board[rank][file];
-		}
+uint256_t actually_make_move(int board[8][8], int r0, int f0, int r1, int f1, bool permanent) {
+	cout << pack_space(r0,f0) << " -> " << pack_space(r1,f1) << endl;
+	int victim = board[r1][f1];
+	int moving = board[r0][f0];
+	board[r0][f0] = 0;
+	board[r1][f1] = moving;
+	// uint256_t result = bitify(board);
+	if (not permanent) {
+		board[r1][f1] = victim;
+		board[r0][f0] = moving;
 	}
-	return board_bits;
-}
-
-int boardify(int board[8][8], uint256_t board_bits){
+	// return result;
 	return 0;
 }
 
-uint256_t mover(uint256_t board_bits, bool turn, string move){
-	// Parse move
-		// use RegEx
-	// Convert bits to board array
-	int board[8][8];
-	cout << board_bits << endl;
-	// Make move on board
-	make_move(board, turn, move);
-	// Validate move
-	// Convert board to bits and return
-	// return bitify(board);
-	return 0;
-}
+// uint256_t mover(uint256_t board_bits, bool turn, string move){
+// 	// Parse move
+// 		// use RegEx
+// 	// Convert bits to board array
+// 	int board[8][8];
+// 	cout << board_bits << endl;
+// 	// Make move on board
+// 	make_move(board, turn, move);
+// 	// Validate move
+// 	// Convert board to bits and return
+// 	// return bitify(board);
+// 	return 0;
+// }
 
 int setboard(int board[8][8], uint256_t board_bits){
 	for (int rank = 0; rank < 8; rank++){
@@ -258,7 +332,7 @@ unsigned long long range_pawn(int piece, int board[8][8], bool boolboard[8][8], 
 		target = board[r1][f1];
 		if (target == Empty) {
 			boolboard[r1][f1] = 1;
-			cout << pack_space(r1,f1) << endl;
+			// cout << pack_space(r1,f1) << endl;
 		}
 		// Two spaces forward
 		if (r0 == 1 + color * 5) {
@@ -266,7 +340,7 @@ unsigned long long range_pawn(int piece, int board[8][8], bool boolboard[8][8], 
 			target = board[r1][f1];
 			if (target == Empty){
 				boolboard[r1][f1] = 1;
-				cout << pack_space(r1,f1) << endl;
+				// cout << pack_space(r1,f1) << endl;
 			}
 		}
 	}
@@ -278,7 +352,7 @@ unsigned long long range_pawn(int piece, int board[8][8], bool boolboard[8][8], 
 			target = board[r1][f1];
 			if (target and (target/8)^(piece/8)) {
 				boolboard[r1][f1] = 1;
-				cout << pack_space(r0,f0)[0] << 'x' << pack_space(r1,f1) << endl;
+				// cout << pack_space(r0,f0)[0] << 'x' << pack_space(r1,f1) << endl;
 			}
 		}
 		// Capture East (toward H file)
@@ -287,7 +361,7 @@ unsigned long long range_pawn(int piece, int board[8][8], bool boolboard[8][8], 
 			target = board[r1][f1];
 			if (target and (target/8)^(piece/8)) {
 				boolboard[r1][f1] = 1;
-				cout << pack_space(r0,f0)[0] << 'x' << pack_space(r1,f1) << endl;
+				// cout << pack_space(r0,f0)[0] << 'x' << pack_space(r1,f1) << endl;
 			}
 		}
 	}
@@ -312,10 +386,10 @@ unsigned long long range_single(int piece, int dirs[8][2], int ndirs, int board[
 			int target = board[r1][f1];
 			if (move and (target == Empty)){
 				boolboard[r1][f1] = 1;
-				cout << Piece_symbol(piece) << pack_space(r1,f1) << endl;
+				// cout << Piece_symbol(piece) << pack_space(r1,f1) << endl;
 			} else if (target and capture and (target/8)^(piece/8)){
 				boolboard[r1][f1] = 1;
-				cout << Piece_symbol(piece) << 'x' << pack_space(r1,f1) << endl;
+				// cout << Piece_symbol(piece) << 'x' << pack_space(r1,f1) << endl;
 			}
 		}
 	}
@@ -338,12 +412,12 @@ unsigned long long range_long(int piece, int dirs[8][2], int ndirs, int board[8]
 		while (go and r1 < 8 and r1 >= 0 and f1 < 8 and f1 >= 0) {
 			if (capture and (target/8)^(piece/8)){
 				boolboard[r1][f1] = target;
-				cout << Piece_symbol(piece) << 'x' << pack_space(r1,f1) << endl;
+				// cout << Piece_symbol(piece) << 'x' << pack_space(r1,f1) << endl;
 				go = false;
 			}
 			if (target == Empty) {
 				boolboard[r1][f1] = move;
-				cout << Piece_symbol(piece) << pack_space(r1,f1) << endl;
+				// cout << Piece_symbol(piece) << pack_space(r1,f1) << endl;
 			} else {
 				go = false;
 			}
@@ -418,6 +492,98 @@ unsigned long long range(int board[8][8], string space, bool move, bool capture)
 unsigned long long range(int board[8][8], int r, int f) {return range(board, r, f, 1, 1);}
 unsigned long long range(int board[8][8], string space) {return range(board, space, 1, 1);}
 
+
+bool make_move_explicit(int board[8][8], bool turn, smatch match){
+	string pieceS = match.str(3);
+	if (pieceS.length() == 0) {
+		pieceS = "P";
+	}
+	char piece = pieceS[0];
+	string rank0S  = match.str(5);
+	string file0S  = match.str(4);
+	string capture = match.str(6);
+	string rank1S  = match.str(8);
+	string file1S  = match.str(7);
+	string castle  = match.str(9);
+	string check  = match.str(11);
+
+	int rank0 = 56 - rank0S[0];
+	int file0 = file0S[0] - 97;
+	int rank1 = 56 - rank1S[0];
+	int file1 = file1S[0] - 97;
+
+	char current_piece = piece_symbol(board[rank0][file0]);
+	current_piece -= 32 * turn;
+	if (current_piece == piece) {
+		int moving = board[rank0][file0];
+		board[rank0][file0] = 0;
+		board[rank1][file1] = moving;
+		return true;
+	}
+	return false;
+}
+
+bool make_move_algebraic(int board[8][8], bool turn, smatch match){
+	string pieceS = match.str(3);
+	if (pieceS.length() == 0) {
+		pieceS = "P";
+	}
+	char piece = pieceS[0];
+	// string rank0S  = match.str(5);
+	// string file0S  = match.str(4);
+	bool capture = match.str(6) == "x";
+	bool move = not capture;
+	string rank1S  = match.str(8);
+	string file1S  = match.str(7);
+	// string castle  = match.str(9);
+	// string check  = match.str(11);
+	string rf1S = file1S + rank1S;
+	// cout << rf1S << endl;
+	int rf1 = parse_space(rf1S);
+	int r1 = rf1 / 8;
+	int f1 = rf1 % 8;
+	int minRank = 0;
+	int maxRank = 7;
+	int minFile = 0;
+	int maxFile = 7;
+	int piece_int = piece_symbol(piece) + 8 * turn;
+	for (int r0 = minRank; r0 <= maxRank; ++r0) {
+		for (int f0 = minFile; f0 <= maxFile; ++f0) {
+			if (board[r0][f0] == piece_int) {
+				unsigned long long int range_bits = range(board, r0, f0, move, capture);
+				int possible = range_bits >> (r1 * 8 + f1);
+				// cout << possible << endl;
+				possible %= 2;
+				if (possible) {
+					cout << range_bits << endl;
+					actually_make_move(board, r0, f0, r1, f1, true);
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+bool make_move(int board[8][8], bool turn, string move){
+
+	smatch match;
+
+	// regex exp("((([RNBQKP]|)([a-h])([1-8])(x?)([a-h])([1-8]))|(O-O(-O|)))([+#]?)");
+	// regex_match(move, match, exp);
+	// if (match.length()) {
+	// 	return make_move_explicit(board, turn, match);
+	// }
+
+	regex alg("((([RNBQKP]|)([a-h]?)([1-8]?)(x?)([a-h])([1-8]))|(O-O(-O|)))([+#]?)");
+	regex_match(move, match, alg);
+	if (match.length()) {
+		return make_move_algebraic(board, turn, match);
+	}
+
+	return false;
+}
+
 int main(){
 	bool turn = 0;
 	int turn_number = 1;
@@ -449,14 +615,14 @@ int main(){
 		printboard(board,1);
 		// setboard(board,0);
 		// printboard(board,0);
-		for (int rank = 7; rank >= 0; rank--) {
-			for (int file = 0; file < 8; file++) {
-				int piece = board[rank][file];
-				if (piece and piece/8 == turn) {
-					range(board, rank, file);
-				}
-			}
-		}
+		// for (int rank = 7; rank >= 0; rank--) {
+		// 	for (int file = 0; file < 8; file++) {
+		// 		int piece = board[rank][file];
+		// 		if (piece and piece/8 == turn) {
+		// 			range(board, rank, file);
+		// 		}
+		// 	}
+		// }
 		cout << turn_number << " ";
 		if (turn == 0) {
 			cout << "White";
