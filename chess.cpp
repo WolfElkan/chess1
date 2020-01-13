@@ -25,38 +25,32 @@ const int BlackBishop = 14; // b
 const int BlackQueen  = 15; // q
 
 int orthogonal[8][2] = {
-	{ 0, 1}, // North
-	{ 1, 0}, // East
-	{ 0,-1}, // South
-	{-1, 0}, // West
+	{ 1, 0}, // North
+	{ 0, 1}, // East
+	{-1, 0}, // South
+	{ 0,-1}, // West
 
-	{0 ,0 }, // placeholder
-	{0 ,0 }, // placeholder
-	{0 ,0 }, // placeholder
-	{0 ,0 }, // placeholder
+	{0,0},{0,0},{0,0},{0,0}
 };
 
 int diagonal[8][2] = {
 	{ 1, 1}, // Northeast
-	{ 1,-1}, // Southeast
+	{-1, 1}, // Southeast
 	{-1,-1}, // Southwest
-	{-1, 1}, // Northwest
+	{ 1,-1}, // Northwest
 
-	{0 ,0 }, // placeholder
-	{0 ,0 }, // placeholder
-	{0 ,0 }, // placeholder
-	{0 ,0 }, // placeholder
+	{0,0},{0,0},{0,0},{0,0}
 };
 
 int octagonal[8][2] = {
-	{ 0, 1}, // North
+	{ 1, 0}, // North
 	{ 1, 1}, // Northeast
-	{ 1, 0}, // East
-	{ 1,-1}, // Southeast
-	{ 0,-1}, // South
+	{ 0, 1}, // East
+	{-1, 1}, // Southeast
+	{-1, 0}, // South
 	{-1,-1}, // Southwest
-	{-1, 0}, // West
-	{-1, 1}, // Northwest
+	{ 0,-1}, // West
+	{ 1,-1}, // Northwest
 };
 
 int theodorgonal[8][2] = { // all vectors with a magnitude of Theodorus' constant
@@ -69,6 +63,32 @@ int theodorgonal[8][2] = { // all vectors with a magnitude of Theodorus' constan
 	{ 1,-2}, // 297 WNW
 	{ 2,-1}, // 333 NNW
 };
+
+void compass(int rD, int fD){
+
+	if (fD == 2) {
+		cout << "east by ";
+	} else if (fD == -2) {
+		cout << "west by ";
+	}
+
+	if (rD == 2) {
+		cout << "north by north";
+	} else if (rD == 1) {
+		cout << "north";
+	} else if (rD == -1) {
+		cout << "south";
+	} else if (rD == -2) {
+		cout << "south by south";
+	}
+
+	if (fD == 2 or fD == 1) {
+		cout << "east";
+	} else if (fD == -1 or fD == -2) {
+		cout << "west";
+	}
+	cout << endl;
+}
 
 int board[8][8];
 
@@ -429,10 +449,12 @@ unsigned long long range_long(int piece, int dirs[8][2], int ndirs, int board[8]
 		r1 = r0 + rD;
 		f1 = f0 + fD;
 		target = board[r1][f1];
-		// cout << dirs[i][0] << ' ' << dirs[i][1] << endl;
+		// compass(rD,fD);
 		bool go = true;
 		while (go and r1 < 8 and r1 >= 0 and f1 < 8 and f1 >= 0) {
-			if (capture and (target/8)^(piece/8)){
+			// cout << pack_space(r1, f1) << endl;
+			// cout << target << endl;
+			if (capture and target and (target/8)^(piece/8)){
 				boolboard[r1][f1] = target;
 				// cout << Piece_symbol(piece) << 'x' << pack_space(r1,f1) << endl;
 				go = false;
@@ -626,6 +648,25 @@ void assert(int board[8][8], string space, int piece){
 	board[r][f] = piece;
 }
 
+void matthunt_usa_burchst(int board[8][8], bool &turn, int &turn_number) {
+	bool y;
+	y = make_move(board, 0, "e4");
+	turn_number += y * turn;
+	turn = turn ^ y;
+	y = make_move(board, 1, "e5");
+	turn_number += y * turn;
+	turn = turn ^ y;
+	y = make_move(board, 0, "Nf3");
+	turn_number += y * turn;
+	turn = turn ^ y;
+	y = make_move(board, 1, "d5");
+	turn_number += y * turn;
+	turn = turn ^ y;
+	y = make_move(board, 0, "exd5");
+	turn_number += y * turn;
+	turn = turn ^ y;
+}
+
 int main(){
 	bool turn = 0;
 	int turn_number = 1;
@@ -635,29 +676,16 @@ int main(){
 		board[1][file] = 1;
 		board[0][file] = court[file];
 	}
-	assert(board, "d1", Empty);
-	assert(board, "d2", WhiteQueen);
-	printboard(board,1);
+	// assert(board, "d1", Empty);
+	// assert(board, "d2", WhiteQueen);
+	// printboard(board,1);
 	// assert(board, "e5", BlackPawn);
 	// assert(board, "h4", WhiteKing);
-	// bool y;
-	// y = make_move(board, 0, "e4");
-	// turn_number += y * turn;
-	// turn = turn ^ y;
-	// y = make_move(board, 1, "e5");
-	// turn_number += y * turn;
-	// turn = turn ^ y;
-	// y = make_move(board, 0, "Nf3");
-	// turn_number += y * turn;
-	// turn = turn ^ y;
-	// y = make_move(board, 1, "d5");
-	// turn_number += y * turn;
-	// turn = turn ^ y;
-	// y = make_move(board, 0, "exd5");
-	// turn_number += y * turn;
-	// turn = turn ^ y;
-	cout << range(board, "d2") << endl;
-	bool go = false;
+	matthunt_usa_burchst(board, turn, turn_number);
+
+	cout << range(board, "d8") << endl;
+	bool go = true;
+	// go = false;
 		// printboard(board,1);
 		// string space;
 		// space = "d5";
@@ -675,6 +703,7 @@ int main(){
 
 	while (go) {
 		printboard_flipped(board,1);
+		// // List all legal moves
 		// setboard(board,0);
 		// printboard(board,0);
 		// for (int rank = 7; rank >= 0; rank--) {
