@@ -7,19 +7,19 @@
 #include "./uint128_t.h"
 using namespace std;
 
-const int Empty       =  0;
+const int Empty       =  0; //  
 const int WhitePawn   =  1; // P
 const int WhiteKnight =  2; // N
 const int WhiteKing   =  3; // K
-const int WhiteGeneric=  4; // X
+// const int WhiteGeneric=  4; // X
 const int WhiteRook   =  5; // R
 const int WhiteBishop =  6; // B
 const int WhiteQueen  =  7; // Q
-const int Generic     =  8; // *
+// const int Generic     =  8; // *
 const int BlackPawn   =  9; // p
 const int BlackKnight = 10; // n
 const int BlackKing   = 11; // k
-const int BlackGeneric= 12; // x
+// const int BlackGeneric= 12; // x
 const int BlackRook   = 13; // r
 const int BlackBishop = 14; // b
 const int BlackQueen  = 15; // q
@@ -29,6 +29,7 @@ int orthogonal[8][2] = {
 	{ 1, 0}, // East
 	{ 0,-1}, // South
 	{-1, 0}, // West
+
 	{0 ,0 }, // placeholder
 	{0 ,0 }, // placeholder
 	{0 ,0 }, // placeholder
@@ -40,6 +41,7 @@ int diagonal[8][2] = {
 	{ 1,-1}, // Southeast
 	{-1,-1}, // Southwest
 	{-1, 1}, // Northwest
+
 	{0 ,0 }, // placeholder
 	{0 ,0 }, // placeholder
 	{0 ,0 }, // placeholder
@@ -213,6 +215,22 @@ int printboard(int board[8][8], bool grid) {
 	return 0;
 }
 
+int printboard_flipped(int board[8][8], bool grid) {
+	for (int rank = 0; rank <= 7; rank++){
+		if (grid) {
+			cout << rank + 1 << ' ';
+		}
+		for (int file = 7; file >= 0; file--){
+			cout << piece_symbol(board[rank][file]) << ' ';
+		}
+		cout << endl;
+	}
+	if (grid) {
+		cout << "  h g f e d c b a" << endl;
+	}
+	return 0;
+}
+
 int parse_space(string space){
 	int rank = int(space[1]) - 49;
 	int file = int(space[0]) - 97;
@@ -254,9 +272,13 @@ bool boolspace(unsigned long long int board_bits, string space) {
 }
 
 uint256_t actually_make_move(int board[8][8], int r0, int f0, int r1, int f1, bool permanent) {
-	cout << pack_space(r0,f0) << " -> " << pack_space(r1,f1) << endl;
 	int victim = board[r1][f1];
 	int moving = board[r0][f0];
+	if (victim) {
+		cout << pack_space(r0,f0) << " *> " << pack_space(r1,f1) << endl;
+	} else {
+		cout << pack_space(r0,f0) << " -> " << pack_space(r1,f1) << endl;
+	}
 	board[r0][f0] = 0;
 	board[r1][f1] = moving;
 	// uint256_t result = bitify(board);
@@ -529,8 +551,6 @@ bool make_move_algebraic(int board[8][8], bool turn, smatch match){
 		pieceS = "P";
 	}
 	char piece = pieceS[0];
-	// string rank0S  = match.str(5);
-	// string file0S  = match.str(4);
 	bool capture = match.str(6) == "x";
 	bool move = not capture;
 	string rank1S  = match.str(8);
@@ -542,10 +562,25 @@ bool make_move_algebraic(int board[8][8], bool turn, smatch match){
 	int rf1 = parse_space(rf1S);
 	int r1 = rf1 / 8;
 	int f1 = rf1 % 8;
+	
 	int minRank = 0;
 	int maxRank = 7;
+	string rank0S = match.str(5);
+	int rank0 = int(rank0S[0]) - 49;
+	if (rank0S.length()) {
+		minRank = rank0;
+		maxRank = rank0;
+	}
+	
 	int minFile = 0;
 	int maxFile = 7;
+	string file0S = match.str(4);
+	int file0 = int(file0S[0]) - 97;
+	if (file0S.length()) {
+		minFile = file0;
+		maxFile = file0;
+	}
+
 	int piece_int = piece_symbol(piece) + 8 * turn;
 	for (int r0 = minRank; r0 <= maxRank; ++r0) {
 		for (int f0 = minFile; f0 <= maxFile; ++f0) {
@@ -553,9 +588,9 @@ bool make_move_algebraic(int board[8][8], bool turn, smatch match){
 				unsigned long long int range_bits = range(board, r0, f0, move, capture);
 				int possible = range_bits >> (r1 * 8 + f1);
 				// cout << possible << endl;
+				cout << range_bits << endl;
 				possible %= 2;
 				if (possible) {
-					cout << range_bits << endl;
 					actually_make_move(board, r0, f0, r1, f1, true);
 					return true;
 				}
@@ -584,6 +619,13 @@ bool make_move(int board[8][8], bool turn, string move){
 	return false;
 }
 
+void assert(int board[8][8], string space, int piece){
+	int rf = parse_space(space);
+	int r = rf / 8;
+	int f = rf % 8;
+	board[r][f] = piece;
+}
+
 int main(){
 	bool turn = 0;
 	int turn_number = 1;
@@ -593,9 +635,29 @@ int main(){
 		board[1][file] = 1;
 		board[0][file] = court[file];
 	}
-	// board[4][3] = WhiteKnight; // d5
-	// board[3][7] = WhiteKing; // h4
-	bool go = true;
+	assert(board, "d1", Empty);
+	assert(board, "d2", WhiteQueen);
+	printboard(board,1);
+	// assert(board, "e5", BlackPawn);
+	// assert(board, "h4", WhiteKing);
+	// bool y;
+	// y = make_move(board, 0, "e4");
+	// turn_number += y * turn;
+	// turn = turn ^ y;
+	// y = make_move(board, 1, "e5");
+	// turn_number += y * turn;
+	// turn = turn ^ y;
+	// y = make_move(board, 0, "Nf3");
+	// turn_number += y * turn;
+	// turn = turn ^ y;
+	// y = make_move(board, 1, "d5");
+	// turn_number += y * turn;
+	// turn = turn ^ y;
+	// y = make_move(board, 0, "exd5");
+	// turn_number += y * turn;
+	// turn = turn ^ y;
+	cout << range(board, "d2") << endl;
+	bool go = false;
 		// printboard(board,1);
 		// string space;
 		// space = "d5";
@@ -612,7 +674,7 @@ int main(){
 		// }
 
 	while (go) {
-		printboard(board,1);
+		printboard_flipped(board,1);
 		// setboard(board,0);
 		// printboard(board,0);
 		// for (int rank = 7; rank >= 0; rank--) {
